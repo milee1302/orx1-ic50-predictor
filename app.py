@@ -7,6 +7,7 @@ from rdkit.Chem import AllChem
 import gdown
 import os
 import zipfile
+import glob # Thêm thư viện để tự động tìm file
 
 # --- GIAO DIỆN CHÍNH ---
 st.title("Dự đoán ORX1 IC50 bằng Ensemble XGBoost 🧬")
@@ -18,19 +19,25 @@ def load_model_from_drive():
     file_id = '1_cCTY3euT-yPtBsp1wYW9P0yOadVB9Db'
     url = f'https://drive.google.com/uc?id={file_id}'
     zip_path = "model_orx1.zip"
-    pkl_path = "Ensemble_50_XGBoost_Raw_ECFP4_MAX.pkl" # Đảm bảo tên này khớp với tên file nằm BÊN TRONG cục zip của bro
+    extract_folder = "model_extracted"
     
-    # Nếu chưa có file pkl thì tiến hành tải zip và giải nén
-    if not os.path.exists(pkl_path):
-        with st.spinner("Đang tải file ZIP từ Google Drive và giải nén (68MB)... Chờ tí nhé bro!"):
-            # Tải file ZIP
+    # 1. Tải file ZIP (nếu chưa tải)
+    if not os.path.exists(zip_path):
+        with st.spinner("Đang tải file ZIP từ Drive và giải nén (68MB)... Chờ tí nhé bro!"):
             gdown.download(url, zip_path, quiet=False)
             
-            # Giải nén file ZIP
+            # 2. Giải nén file ZIP
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-                zip_ref.extractall(".") 
+                zip_ref.extractall(extract_folder) 
                 
-    # Đọc file pkl đã được giải nén
+    # 3. Tự động quét tìm file .pkl sau khi giải nén (bất chấp file nằm trong thư mục con)
+    pkl_files = glob.glob(f"{extract_folder}/**/*.pkl", recursive=True)
+    if not pkl_files:
+        raise FileNotFoundError("Giải nén xong nhưng không tìm thấy file .pkl nào bên trong cục ZIP của bro!")
+        
+    pkl_path = pkl_files[0] # Lấy file pkl đầu tiên tìm được
+    
+    # 4. Đọc model
     with open(pkl_path, "rb") as f:
         return pickle.load(f)
 
