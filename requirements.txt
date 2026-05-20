@@ -1,0 +1,7 @@
+streamlit
+xgboost
+scikit-learn
+rdkit-pypi
+pandas
+numpy
+gdown
