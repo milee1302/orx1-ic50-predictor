@@ -1,7 +1,7 @@
 streamlit
 xgboost
 scikit-learn
-rdkit-pypi
+rdkit
 pandas
 numpy
 gdown
