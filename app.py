@@ -6,6 +6,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 import gdown
 import os
+import zipfile
 
 # --- GIAO DIỆN CHÍNH ---
 st.title("Dự đoán ORX1 IC50 bằng Ensemble XGBoost 🧬")
@@ -14,23 +15,30 @@ st.write("Ứng dụng sử dụng mô hình Ensemble XGBoost (50 models) và đ
 # --- TẢI MÔ HÌNH TỪ GOOGLE DRIVE ---
 @st.cache_resource
 def load_model_from_drive():
-    # ĐÃ CẬP NHẬT FILE ID MỚI NHẤT CỦA BRO:
     file_id = '1_cCTY3euT-yPtBsp1wYW9P0yOadVB9Db'
     url = f'https://drive.google.com/uc?id={file_id}'
-    output = "Ensemble_50_XGBoost_Raw_ECFP4_MAX.pkl"
+    zip_path = "model_orx1.zip"
+    pkl_path = "Ensemble_50_XGBoost_Raw_ECFP4_MAX.pkl" # Đảm bảo tên này khớp với tên file nằm BÊN TRONG cục zip của bro
     
-    if not os.path.exists(output):
-        with st.spinner("Đang tải mô hình từ Google Drive (68MB)... Lần đầu chạy sẽ mất khoảng 10-20 giây nhé bro!"):
-            gdown.download(url, output, quiet=False)
+    # Nếu chưa có file pkl thì tiến hành tải zip và giải nén
+    if not os.path.exists(pkl_path):
+        with st.spinner("Đang tải file ZIP từ Google Drive và giải nén (68MB)... Chờ tí nhé bro!"):
+            # Tải file ZIP
+            gdown.download(url, zip_path, quiet=False)
             
-    with open(output, "rb") as f:
+            # Giải nén file ZIP
+            with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                zip_ref.extractall(".") 
+                
+    # Đọc file pkl đã được giải nén
+    with open(pkl_path, "rb") as f:
         return pickle.load(f)
 
 try:
     model = load_model_from_drive()
-    st.success("Tải mô hình thành công! Đã sẵn sàng dự đoán. 🚀")
+    st.success("Tải và giải nén mô hình thành công! Đã sẵn sàng dự đoán. 🚀")
 except Exception as e:
-    st.error(f"Lỗi khi tải mô hình. Vui lòng kiểm tra lại quyền chia sẻ file trên Google Drive. Lỗi chi tiết: {e}")
+    st.error(f"Lỗi khi tải mô hình. Vui lòng kiểm tra lại. Lỗi chi tiết: {e}")
     st.stop()
 
 # --- XỬ LÝ HÓA HỌC: SMILES -> ECFP4 ---
