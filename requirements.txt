@@ -1,5 +1,5 @@
 streamlit
-xgboost==3.2.0
+xgboost
 scikit-learn==1.6.1
 rdkit
 pandas
