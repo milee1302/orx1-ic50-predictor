@@ -9,11 +9,11 @@ import zipfile
 import glob
 import joblib 
 
-# --- GIAO DIỆN CHÍNH ---
-st.title("ORX1 pIC₅₀ Prediction using Ensemble XGBoost 🧬")
+# --- MAIN INTERFACE ---
+st.title("OX1R pIC₅₀ Prediction Ensemble Model 🧬")
 st.write("This application utilizes an Ensemble XGBoost model (50 models) and ECFP4 features, applying a consensus prediction strategy.")
 
-# --- TẢI VÀ GIẢI NÉN MÔ HÌNH TỪ GOOGLE DRIVE ---
+# --- DOWNLOAD AND EXTRACT MODEL FROM GOOGLE DRIVE ---
 @st.cache_resource
 def load_model_from_drive():
     file_id = '1_cCTY3euT-yPtBsp1wYW9P0yOadVB9Db'
@@ -22,14 +22,14 @@ def load_model_from_drive():
     extract_folder = "model_extracted"
     
     if not os.path.exists(zip_path):
-        with st.spinner("Đang tải file ZIP từ Drive và giải nén (68MB)... Chờ tí nhé bro!"):
+        with st.spinner("Downloading and extracting ZIP file from Drive (68MB)... Please wait!"):
             gdown.download(url, zip_path, quiet=False)
             with zipfile.ZipFile(zip_path, 'r') as zip_ref:
                 zip_ref.extractall(extract_folder) 
                 
     pkl_files = glob.glob(f"{extract_folder}/**/*.pkl", recursive=True)
     if not pkl_files:
-        raise FileNotFoundError("Không tìm thấy file .pkl nào bên trong cục ZIP!")
+        raise FileNotFoundError("No .pkl file found inside the ZIP archive!")
         
     ensemble_data = joblib.load(pkl_files[0])
     
@@ -40,12 +40,12 @@ def load_model_from_drive():
 
 try:
     preprocessor, models = load_model_from_drive()
-    st.success(f"Tải thành công Bộ tiền xử lý và {len(models)} mô hình XGBoost! Đã sẵn sàng. 🚀")
+    st.success(f"Successfully loaded Preprocessor and {len(models)} XGBoost models! Ready. 🚀")
 except Exception as e:
-    st.error(f"Lỗi khi tải mô hình. Lỗi chi tiết: {e}")
+    st.error(f"Error loading model. Details: {e}")
     st.stop()
 
-# --- XỬ LÝ HÓA HỌC: SMILES -> ECFP4 ---
+# --- CHEMICAL PROCESSING: SMILES -> ECFP4 ---
 def smiles_to_ecfp4(smiles, radius=2, n_bits=2048):
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
@@ -53,15 +53,15 @@ def smiles_to_ecfp4(smiles, radius=2, n_bits=2048):
     fp = AllChem.GetMorganFingerprintAsBitVect(mol, radius, nBits=n_bits)
     return np.array(fp).reshape(1, -1)
 
-# --- KHUNG NHẬP LIỆU & DỰ ĐOÁN ĐỒNG THUẬN ---
+# --- INPUT FORM & CONSENSUS PREDICTION ---
 st.markdown("---")
 smiles_input = st.text_input("Enter the SMILES string of the compound here:", "CC1=CC=C(C=C1)C2=CC(=NN2C3=CC=C(C=C3)S(=O)(=O)N)C(F)(F)F")
 
-if st.button("Dự đoán pIC50", type="primary"):
+if st.button("Predict pIC₅₀", type="primary"):
     if smiles_input.strip() == "":
-        st.warning("Bro chưa nhập chuỗi SMILES kìa!")
+        st.warning("Please enter a SMILES string!")
     else:
-        with st.spinner("Đang cho 50 mô hình chạy đồng thuận..."):
+        with st.spinner("Running consensus prediction across 50 models..."):
             features_raw = smiles_to_ecfp4(smiles_input)
             
             if features_raw is not None:
@@ -82,6 +82,6 @@ if st.button("Dự đoán pIC50", type="primary"):
                     
                     st.balloons()
                 except Exception as e:
-                    st.error(f"Lỗi trong quá trình tính toán đặc trưng: {e}")
+                    st.error(f"Error during feature calculation: {e}")
             else:
-                st.error("Chuỗi SMILES không hợp lệ. Bro kiểm tra lại cấu trúc hóa học nhé.")
+                st.error("Invalid SMILES string. Please double-check the chemical structure.")
